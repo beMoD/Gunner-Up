@@ -1,6 +1,8 @@
 class Game {
     constructor() {
+        console.log('Game constructor called!');
         this.canvas = document.getElementById('gameCanvas');
+        console.log('Canvas element:', this.canvas);
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
@@ -30,26 +32,97 @@ class Game {
         
         this.spatialGrid = new SpatialGrid(this.width, this.height, 50);
         
+        this.physicsSettings = {
+            collisionAvoidance: true,
+            swarmCohesion: true,
+            alignment: true,
+            densityBehavior: true
+        };
+        
         this.lastTime = 0;
         
         this.init();
     }
     
     init() {
+        console.log('init() called');
+        this.setupInitialEventListeners();
+        this.showSettings();
+    }
+    
+    setupInitialEventListeners() {
+        const startGameBtn = document.getElementById('startGame');
+        console.log('Start button element:', startGameBtn);
+        
+        if (startGameBtn) {
+            startGameBtn.addEventListener('click', () => {
+                console.log('Start button clicked!');
+                this.startGame();
+            });
+            console.log('Event listener added to start button');
+        } else {
+            console.error('Start button not found!');
+        }
+    }
+    
+    showSettings() {
+        console.log('showSettings() called');
+        const overlay = document.getElementById('settingsOverlay');
+        const gameContainer = document.getElementById('gameContainer');
+        console.log('Settings overlay:', overlay);
+        console.log('Game container:', gameContainer);
+        
+        if (overlay) {
+            overlay.style.display = 'flex';
+            console.log('Settings overlay shown');
+        } else {
+            console.error('Settings overlay not found!');
+        }
+        
+        if (gameContainer) {
+            gameContainer.style.display = 'none';
+        } else {
+            console.error('Game container not found!');
+        }
+    }
+    
+    startGame() {
+        console.log('startGame() called!');
+        
+        this.physicsSettings.collisionAvoidance = document.getElementById('collisionAvoidance').checked;
+        this.physicsSettings.swarmCohesion = document.getElementById('swarmCohesion').checked;
+        this.physicsSettings.alignment = document.getElementById('alignment').checked;
+        this.physicsSettings.densityBehavior = document.getElementById('densityBehavior').checked;
+        
+        console.log('Physics settings:', this.physicsSettings);
+        
+        const overlay = document.getElementById('settingsOverlay');
+        const gameContainer = document.getElementById('gameContainer');
+        
+        console.log('Overlay element:', overlay);
+        console.log('Game container element:', gameContainer);
+        
+        if (overlay) overlay.style.display = 'none';
+        if (gameContainer) gameContainer.style.display = 'block';
+        
         this.setupEventListeners();
         this.createPlayers();
         this.createEnemies();
         this.gameLoop();
+        
+        console.log('Game started successfully!');
     }
     
     setupEventListeners() {
         const playBtn = document.getElementById('playBtn');
         const soundBtn = document.getElementById('soundBtn');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
         
         playBtn.addEventListener('click', () => this.togglePause());
         soundBtn.addEventListener('click', () => this.toggleSound());
         fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        settingsBtn.addEventListener('click', () => this.showSettings());
         
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
@@ -822,6 +895,27 @@ class SpatialGrid {
         if (cell) cell.soldiers.push(soldier);
     }
     
+    getNeighbors(soldier) {
+        const neighbors = [];
+        const col = Math.floor(soldier.x / this.cellSize);
+        const row = Math.floor(soldier.y / this.cellSize);
+        
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                const newCol = col + i;
+                const newRow = row + j;
+                if (newCol >= 0 && newCol < this.cols && newRow >= 0 && newRow < this.rows) {
+                    const cell = this.grid[newRow * this.cols + newCol];
+                    if (cell) {
+                        neighbors.push(...cell.soldiers);
+                    }
+                }
+            }
+        }
+        
+        return neighbors.filter(s => s !== soldier);
+    }
+    
     addEnemy(enemy) {
         const cell = this.getCell(enemy.x, enemy.y);
         if (cell) cell.enemies.push(enemy);
@@ -942,6 +1036,40 @@ class Soldier {
         this.velocityX += forceX;
         this.velocityY += forceY;
         
+        if (this.player.game.physicsSettings.collisionAvoidance ||
+            this.player.game.physicsSettings.swarmCohesion ||
+            this.player.game.physicsSettings.alignment ||
+            this.player.game.physicsSettings.densityBehavior) {
+            
+            const neighbors = this.player.game.spatialGrid.getNeighbors(this);
+            
+            if (this.player.game.physicsSettings.collisionAvoidance) {
+                const avoidanceForce = this.calculateAvoidance(neighbors);
+                this.velocityX += avoidanceForce.x;
+                this.velocityY += avoidanceForce.y;
+            }
+            
+            if (this.player.game.physicsSettings.swarmCohesion) {
+                const cohesionForce = this.calculateCohesion(neighbors);
+                this.velocityX += cohesionForce.x;
+                this.velocityY += cohesionForce.y;
+            }
+            
+            if (this.player.game.physicsSettings.alignment) {
+                const alignmentForce = this.calculateAlignment(neighbors);
+                this.velocityX += alignmentForce.x;
+                this.velocityY += alignmentForce.y;
+            }
+            
+            if (this.player.game.physicsSettings.densityBehavior) {
+                const densityResult = this.calculateDensityBehavior(neighbors);
+                this.velocityX *= densityResult.speedFactor;
+                this.velocityY *= densityResult.speedFactor;
+                this.velocityX += densityResult.verticalForce.x;
+                this.velocityY += densityResult.verticalForce.y;
+            }
+        }
+        
         this.velocityX *= this.damping;
         this.velocityY *= this.damping;
         
@@ -971,12 +1099,172 @@ class Soldier {
         }
     }
     
+    calculateAvoidance(neighbors) {
+        let avoidX = 0;
+        let avoidY = 0;
+        const avoidRadius = 25;
+        const avoidStrength = 0.05;
+        
+        neighbors.forEach(neighbor => {
+            if (!neighbor.isDead) {
+                const dx = this.x - neighbor.x;
+                const dy = this.y - neighbor.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < avoidRadius && distance > 0) {
+                    const force = avoidStrength / distance;
+                    avoidX += (dx / distance) * force;
+                    avoidY += (dy / distance) * force;
+                }
+            }
+        });
+        
+        return { x: avoidX, y: avoidY };
+    }
+    
+    calculateCohesion(neighbors) {
+        if (neighbors.length === 0) return { x: 0, y: 0 };
+        
+        let centerX = 0;
+        let centerY = 0;
+        let count = 0;
+        const cohesionRadius = 60;
+        const cohesionStrength = 0.001;
+        
+        neighbors.forEach(neighbor => {
+            if (!neighbor.isDead) {
+                const dx = neighbor.x - this.x;
+                const dy = neighbor.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < cohesionRadius) {
+                    centerX += neighbor.x;
+                    centerY += neighbor.y;
+                    count++;
+                }
+            }
+        });
+        
+        if (count === 0) return { x: 0, y: 0 };
+        
+        centerX /= count;
+        centerY /= count;
+        
+        const dx = centerX - this.x;
+        const dy = centerY - this.y;
+        
+        return { x: dx * cohesionStrength, y: dy * cohesionStrength };
+    }
+    
+    calculateAlignment(neighbors) {
+        if (neighbors.length === 0) return { x: 0, y: 0 };
+        
+        let avgVelX = 0;
+        let avgVelY = 0;
+        let count = 0;
+        const alignRadius = 50;
+        const alignStrength = 0.02;
+        
+        neighbors.forEach(neighbor => {
+            if (!neighbor.isDead) {
+                const dx = neighbor.x - this.x;
+                const dy = neighbor.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < alignRadius) {
+                    avgVelX += neighbor.velocityX;
+                    avgVelY += neighbor.velocityY;
+                    count++;
+                }
+            }
+        });
+        
+        if (count === 0) return { x: 0, y: 0 };
+        
+        avgVelX /= count;
+        avgVelY /= count;
+        
+        const dx = avgVelX - this.velocityX;
+        const dy = avgVelY - this.velocityY;
+        
+        return { x: dx * alignStrength, y: dy * alignStrength };
+    }
+    
+    calculateDensityBehavior(neighbors) {
+        const densityRadius = 40;
+        let nearbyCount = 0;
+        let avgX = 0;
+        let avgY = 0;
+        let validNeighbors = 0;
+        
+        neighbors.forEach(neighbor => {
+            if (!neighbor.isDead) {
+                const dx = neighbor.x - this.x;
+                const dy = neighbor.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < densityRadius) {
+                    nearbyCount++;
+                    avgX += neighbor.x;
+                    avgY += neighbor.y;
+                    validNeighbors++;
+                }
+            }
+        });
+        
+        const maxDensity = 8;
+        const densityRatio = Math.min(nearbyCount / maxDensity, 1);
+        const speedFactor = 1 - (densityRatio * 0.5);
+        
+        let verticalForceX = 0;
+        let verticalForceY = 0;
+        
+        if (validNeighbors > 0) {
+            avgX /= validNeighbors;
+            avgY /= validNeighbors;
+            
+            const crowdCenterX = avgX - this.x;
+            const crowdCenterY = avgY - this.y;
+            
+            if (nearbyCount > 4) {
+                const avoidStrength = 0.02;
+                verticalForceX = -crowdCenterX * avoidStrength;
+                verticalForceY = -crowdCenterY * avoidStrength;
+                
+                const mainSoldier = this.player.mainSoldier;
+                if (mainSoldier) {
+                    const backwardForce = 0.01 * densityRatio;
+                    verticalForceY += backwardForce * 20;
+                }
+            } else if (nearbyCount < 2) {
+                const mainSoldier = this.player.mainSoldier;
+                if (mainSoldier) {
+                    const forwardForce = 0.005;
+                    verticalForceY -= forwardForce * 15;
+                }
+            }
+        }
+        
+        return {
+            speedFactor: speedFactor,
+            verticalForce: { x: verticalForceX, y: verticalForceY }
+        };
+    }
+    
     render(ctx) {
         
     }
 }
 
+console.log('JavaScript file loaded!');
+
 let game;
 window.addEventListener('load', () => {
-    game = new Game();
+    console.log('Window loaded, creating game...');
+    try {
+        game = new Game();
+        console.log('Game created successfully:', game);
+    } catch (error) {
+        console.error('Error creating game:', error);
+    }
 });

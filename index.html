@@ -7,11 +7,47 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel">
+            <h2>Physics Settings</h2>
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="collisionAvoidance" checked>
+                    Collision Avoidance
+                    <span class="setting-desc">Soldiers avoid overlapping</span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="swarmCohesion" checked>
+                    Swarm Cohesion
+                    <span class="setting-desc">Soldiers cluster together</span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="alignment" checked>
+                    Movement Alignment
+                    <span class="setting-desc">Soldiers sync movement direction</span>
+                </label>
+            </div>
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="densityBehavior" checked>
+                    Density Behavior
+                    <span class="setting-desc">Formation adapts to density</span>
+                </label>
+            </div>
+            <button id="startGame" class="start-btn">Start Game</button>
+        </div>
+    </div>
+    
+    <div class="game-container" id="gameContainer" style="display: none;">
         <div class="ui-controls">
             <button id="playBtn" class="control-btn">▶</button>
             <button id="soundBtn" class="control-btn">🔊</button>
             <button id="fullscreenBtn" class="control-btn">⛶</button>
+            <button id="settingsBtn" class="control-btn">⚙</button>
         </div>
         
         <canvas id="gameCanvas" width="500" height="800"></canvas>
