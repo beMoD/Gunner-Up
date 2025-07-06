@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gunner Up</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="ui-controls">
+            <button id="playBtn" class="control-btn">▶</button>
+            <button id="soundBtn" class="control-btn">🔊</button>
+            <button id="fullscreenBtn" class="control-btn">⛶</button>
+        </div>
+        
+        <canvas id="gameCanvas" width="500" height="800"></canvas>
+        
+        <div class="game-info">
+            <div id="score">Score: 0</div>
+            <div id="health">Health: 100</div>
+        </div>
+        
+        <div class="multiplier-display" id="multiplier" style="display: none;">
+            ×2 (10s)
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
