@@ -1,8 +1,6 @@
 class Game {
     constructor() {
-        console.log('Game constructor called!');
         this.canvas = document.getElementById('gameCanvas');
-        console.log('Canvas element:', this.canvas);
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
@@ -45,63 +43,32 @@ class Game {
     }
     
     init() {
-        console.log('init() called');
         this.setupInitialEventListeners();
         this.showSettings();
     }
     
     setupInitialEventListeners() {
         const startGameBtn = document.getElementById('startGame');
-        console.log('Start button element:', startGameBtn);
-        
         if (startGameBtn) {
-            startGameBtn.addEventListener('click', () => {
-                console.log('Start button clicked!');
-                this.startGame();
-            });
-            console.log('Event listener added to start button');
-        } else {
-            console.error('Start button not found!');
+            startGameBtn.addEventListener('click', () => this.startGame());
         }
     }
     
     showSettings() {
-        console.log('showSettings() called');
         const overlay = document.getElementById('settingsOverlay');
         const gameContainer = document.getElementById('gameContainer');
-        console.log('Settings overlay:', overlay);
-        console.log('Game container:', gameContainer);
-        
-        if (overlay) {
-            overlay.style.display = 'flex';
-            console.log('Settings overlay shown');
-        } else {
-            console.error('Settings overlay not found!');
-        }
-        
-        if (gameContainer) {
-            gameContainer.style.display = 'none';
-        } else {
-            console.error('Game container not found!');
-        }
+        if (overlay) overlay.style.display = 'flex';
+        if (gameContainer) gameContainer.style.display = 'none';
     }
     
     startGame() {
-        console.log('startGame() called!');
-        
         this.physicsSettings.collisionAvoidance = document.getElementById('collisionAvoidance').checked;
         this.physicsSettings.swarmCohesion = document.getElementById('swarmCohesion').checked;
         this.physicsSettings.alignment = document.getElementById('alignment').checked;
         this.physicsSettings.densityBehavior = document.getElementById('densityBehavior').checked;
         
-        console.log('Physics settings:', this.physicsSettings);
-        
         const overlay = document.getElementById('settingsOverlay');
         const gameContainer = document.getElementById('gameContainer');
-        
-        console.log('Overlay element:', overlay);
-        console.log('Game container element:', gameContainer);
-        
         if (overlay) overlay.style.display = 'none';
         if (gameContainer) gameContainer.style.display = 'block';
         
@@ -109,8 +76,6 @@ class Game {
         this.createPlayers();
         this.createEnemies();
         this.gameLoop();
-        
-        console.log('Game started successfully!');
     }
     
     setupEventListeners() {
@@ -1256,15 +1221,7 @@ class Soldier {
     }
 }
 
-console.log('JavaScript file loaded!');
-
 let game;
 window.addEventListener('load', () => {
-    console.log('Window loaded, creating game...');
-    try {
-        game = new Game();
-        console.log('Game created successfully:', game);
-    } catch (error) {
-        console.error('Error creating game:', error);
-    }
+    game = new Game();
 });
